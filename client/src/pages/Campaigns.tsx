@@ -6,10 +6,8 @@ import {
   Search, 
   Filter,
   BarChart3,
-  MoreVertical,
   Eye,
-  Edit,
-  Trash2
+  Edit
 } from 'lucide-react'
 import { campaignApi } from '../services/api'
 import { useAuthStore } from '../hooks/useAuthStore'

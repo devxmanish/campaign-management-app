@@ -152,4 +152,13 @@ export const exportApi = {
   get: (exportId: string) => api.get(`/exports/${exportId}`),
 }
 
+// AI API
+export const aiApi = {
+  generateQuestions: (data: { topic: string; numberOfQuestions?: number; questionTypes?: string[] }) =>
+    api.post('/ai/generate-questions', data),
+  
+  generateDescription: (title: string) =>
+    api.post('/ai/generate-description', { title }),
+}
+
 export default api

@@ -22,7 +22,7 @@ export class AuditService {
         targetType,
         targetId,
         campaignId,
-        details,
+        details: details as object | undefined,
       },
     });
 

@@ -4,7 +4,6 @@ import toast from 'react-hot-toast'
 import { 
   ArrowLeft, 
   Edit, 
-  Share2, 
   BarChart3,
   Users,
   FileText,

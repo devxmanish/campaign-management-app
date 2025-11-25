@@ -57,8 +57,8 @@ export function canCreateCampaign(req: Request, _res: Response, next: NextFuncti
     return next(new UnauthorizedError('Authentication required'));
   }
 
-  const allowedRoles = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.CAMPAIGN_CREATOR];
-  if (!allowedRoles.includes(req.user.role)) {
+  const allowedRoles: UserRole[] = [UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.CAMPAIGN_CREATOR];
+  if (!allowedRoles.includes(req.user.role as UserRole)) {
     return next(new ForbiddenError('You do not have permission to create campaigns'));
   }
 

@@ -46,4 +46,7 @@ export const config = {
     pass: process.env.SMTP_PASS,
     fromEmail: process.env.FROM_EMAIL,
   },
+  
+  // AI - Gemini
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
 };

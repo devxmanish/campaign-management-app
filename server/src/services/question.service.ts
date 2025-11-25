@@ -25,7 +25,7 @@ export class QuestionService {
         campaignId,
         questionText: input.questionText,
         type: input.type,
-        options: input.options,
+        options: input.options as object | undefined,
         required: input.required ?? false,
         order: input.order ?? (lastQuestion?.order ?? 0) + 1,
       },
@@ -67,7 +67,13 @@ export class QuestionService {
 
     const updated = await prisma.question.update({
       where: { id: questionId },
-      data: input,
+      data: {
+        questionText: input.questionText,
+        type: input.type,
+        options: input.options as object | undefined,
+        required: input.required,
+        order: input.order,
+      },
     });
 
     return updated;

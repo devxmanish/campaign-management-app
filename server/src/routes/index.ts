@@ -4,6 +4,7 @@ import campaignRoutes from './campaign.routes';
 import exportRoutes from './export.routes';
 import userRoutes from './user.routes';
 import auditRoutes from './audit.routes';
+import aiRoutes from './ai.routes';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.use('/campaigns', campaignRoutes);
 router.use('/exports', exportRoutes);
 router.use('/users', userRoutes);
 router.use('/audit-logs', auditRoutes);
+router.use('/ai', aiRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

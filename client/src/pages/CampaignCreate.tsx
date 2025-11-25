@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { ArrowLeft, ArrowRight, Plus, Trash2, GripVertical } from 'lucide-react'
-import { campaignApi, questionApi } from '../services/api'
+import { ArrowLeft, ArrowRight, Plus, Trash2, GripVertical, Sparkles, Loader2 } from 'lucide-react'
+import { campaignApi, questionApi, aiApi } from '../services/api'
 import { Card, CardContent, CardHeader, CardFooter } from '../components/Card'
 import Button from '../components/Button'
 import Input from '../components/Input'
@@ -39,14 +39,67 @@ export default function CampaignCreate() {
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
   const [campaignId, setCampaignId] = useState<string | null>(null)
+  const [campaignTitle, setCampaignTitle] = useState('')
   const [questions, setQuestions] = useState<Question[]>([])
+  const [aiTopic, setAiTopic] = useState('')
+  const [aiQuestionCount, setAiQuestionCount] = useState(5)
   
-  const { register, handleSubmit, formState: { errors } } = useForm<CampaignForm>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<CampaignForm>({
     defaultValues: {
       visibility: 'PRIVATE',
     },
   })
+
+  const watchTitle = watch('title')
+
+  // Generate description with AI
+  const generateDescription = async () => {
+    if (!watchTitle) {
+      toast.error('Please enter a campaign title first')
+      return
+    }
+    setIsGeneratingAI(true)
+    try {
+      const response = await aiApi.generateDescription(watchTitle)
+      setValue('description', response.data.data.description)
+      toast.success('Description generated!')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } }
+      toast.error(err.response?.data?.error || 'Failed to generate description')
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
+
+  // Generate questions with AI
+  const generateQuestions = async () => {
+    const topic = aiTopic || campaignTitle || watchTitle
+    if (!topic) {
+      toast.error('Please enter a topic for question generation')
+      return
+    }
+    setIsGeneratingAI(true)
+    try {
+      const response = await aiApi.generateQuestions({
+        topic,
+        numberOfQuestions: aiQuestionCount,
+      })
+      const generatedQuestions = response.data.data.map((q: Question, index: number) => ({
+        ...q,
+        order: questions.length + index,
+      }))
+      setQuestions([...questions, ...generatedQuestions])
+      toast.success(`${generatedQuestions.length} questions generated!`)
+      setAiTopic('')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } }
+      toast.error(err.response?.data?.error || 'Failed to generate questions')
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
 
   // Step 1: Create campaign
   const onCreateCampaign = async (data: CampaignForm) => {
@@ -58,6 +111,7 @@ export default function CampaignCreate() {
         visibility: data.visibility,
       })
       setCampaignId(response.data.data.id)
+      setCampaignTitle(data.title)
       toast.success('Campaign created!')
       setStep(2)
     } catch (error: unknown) {
@@ -207,12 +261,29 @@ export default function CampaignCreate() {
                   minLength: { value: 3, message: 'Title must be at least 3 characters' }
                 })}
               />
-              <Textarea
-                label="Description"
-                rows={4}
-                error={errors.description?.message}
-                {...register('description')}
-              />
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <button
+                    type="button"
+                    onClick={generateDescription}
+                    disabled={isGeneratingAI}
+                    className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                  >
+                    {isGeneratingAI ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-3 h-3" />
+                    )}
+                    Generate with AI
+                  </button>
+                </div>
+                <Textarea
+                  rows={4}
+                  error={errors.description?.message}
+                  {...register('description')}
+                />
+              </div>
               <Select
                 label="Visibility"
                 options={[
@@ -323,6 +394,58 @@ export default function CampaignCreate() {
             <Plus className="w-4 h-4 mr-2" />
             Add Question
           </Button>
+
+          {/* AI Question Generator */}
+          <Card className="border-dashed border-2 border-primary-200 bg-primary-50/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="w-5 h-5 text-primary-600" />
+                <h3 className="font-medium text-primary-900">Generate Questions with AI</h3>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex-1">
+                  <Input
+                    value={aiTopic}
+                    onChange={(e) => setAiTopic(e.target.value)}
+                    placeholder={`Topic (e.g., "${campaignTitle || 'Customer Satisfaction'}")`}
+                  />
+                </div>
+                <div className="w-32">
+                  <Select
+                    value={String(aiQuestionCount)}
+                    onChange={(e) => setAiQuestionCount(Number(e.target.value))}
+                    options={[
+                      { value: '3', label: '3 questions' },
+                      { value: '5', label: '5 questions' },
+                      { value: '7', label: '7 questions' },
+                      { value: '10', label: '10 questions' },
+                    ]}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={generateQuestions}
+                  disabled={isGeneratingAI}
+                  className="whitespace-nowrap"
+                >
+                  {isGeneratingAI ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Generate
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-primary-700 mt-2">
+                AI will generate relevant survey questions based on your topic
+              </p>
+            </CardContent>
+          </Card>
 
           <div className="flex justify-between">
             <Button variant="ghost" onClick={() => setStep(1)}>
