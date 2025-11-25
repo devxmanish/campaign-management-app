@@ -84,15 +84,21 @@ FRONTEND_URL=http://localhost:5173
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
-4. Generate Prisma client and run migrations:
+4. Set up the database (Choose One Method):
+
+**Option A: Using SQL Editor (Recommended if you have Prisma issues)**
+
+Run the SQL scripts directly in Supabase SQL Editor:
+1. Go to your Supabase Dashboard → SQL Editor
+2. Run `server/supabase-setup.sql` first (creates tables)
+3. Run `server/supabase-seed.sql` to create the initial admin user
+4. Then generate Prisma client: `cd server && npx prisma generate`
+
+**Option B: Using Prisma Migrations**
 ```bash
 cd server
 npx prisma generate
 npx prisma migrate dev
-```
-
-5. Seed the database (creates initial admin user):
-```bash
 npm run seed
 ```
 
@@ -168,9 +174,12 @@ In the Render dashboard, add these environment variables:
 2. Wait for the build to complete (migrations run automatically during build)
 3. (Optional) To seed the database with an initial admin user, you can:
    - Use a paid Render plan with Shell access and run: `npm run seed`
+   - Or run `server/supabase-seed.sql` directly in the Supabase SQL Editor
    - Or connect to your database directly and run the seed script locally
 
 > **Important**: The `DIRECT_URL` environment variable must point to the non-pooled (direct) Supabase connection string (port 5432). Prisma migrations require a direct connection, not the pooled connection.
+
+> **Alternative**: If Prisma migrations fail during deploy, you can manually set up the database by running `server/supabase-setup.sql` in the Supabase SQL Editor before deployment.
 
 #### Step 5: Note Your API URL
 Your API will be available at: `https://campaign-manager-api.onrender.com`
@@ -234,6 +243,27 @@ Example:
 DATABASE_URL="postgresql://postgres.abcdefgh:YourPassword123@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://postgres.abcdefgh:YourPassword123@aws-0-us-east-1.pooler.supabase.com:5432/postgres"
 ```
+
+#### Step 4: Create Database Tables (Choose One Method)
+
+**Option A: Using SQL Editor (Recommended if Prisma migrations fail)**
+
+1. Open your Supabase Dashboard
+2. Go to **SQL Editor** (left sidebar)
+3. Click **New query**
+4. Copy and paste the contents of `server/supabase-setup.sql`
+5. Click **Run** to execute the script
+6. You should see "Database setup completed successfully!" in the output
+
+**Option B: Using Prisma Migrations**
+
+```bash
+cd server
+npx prisma generate
+npx prisma migrate dev
+```
+
+> **Note**: If you encounter issues with Prisma migrations (connection timeouts, permission errors), use Option A with the SQL script instead.
 
 ---
 
