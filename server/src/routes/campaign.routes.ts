@@ -17,12 +17,13 @@ import {
   paginationValidation,
   idParamValidation,
 } from '../middlewares/validation.middleware';
+import { submissionRateLimiter } from '../middlewares/rateLimit.middleware';
 
 const router = Router();
 
 // Public routes
 router.get('/public/:link', campaignController.getByShareableLink.bind(campaignController));
-router.post('/:id/responses', validate(submitResponseValidation), responseController.submit.bind(responseController));
+router.post('/:id/responses', submissionRateLimiter, validate(submitResponseValidation), responseController.submit.bind(responseController));
 
 // Protected campaign routes
 router.post(
