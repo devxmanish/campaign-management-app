@@ -140,9 +140,11 @@ npm start
    - **Branch**: `main`
    - **Root Directory**: `server`
    - **Runtime**: `Node`
-   - **Build Command**: `npm install && npx prisma generate`
-   - **Start Command**: `npm run build && npm start`
+   - **Build Command**: `bash render-build.sh`
+   - **Start Command**: `npm start`
    - **Instance Type**: Free (or paid for production)
+
+> **Note**: The `render-build.sh` script automatically runs database migrations during the build process. This is essential for the Render free tier, which does not provide Shell access. The script includes `npm install`, `npx prisma generate`, `npx prisma migrate deploy`, and `npm run build`.
 
 #### Step 3: Add Environment Variables
 In the Render dashboard, add these environment variables:
@@ -163,11 +165,12 @@ In the Render dashboard, add these environment variables:
 
 #### Step 4: Deploy
 1. Click **Create Web Service**
-2. Wait for the build to complete
-3. Run database migrations:
-   - Go to **Shell** tab in Render dashboard
-   - Run: `npx prisma migrate deploy`
-   - Run: `npm run seed` (optional, to create initial admin)
+2. Wait for the build to complete (migrations run automatically during build)
+3. (Optional) To seed the database with an initial admin user, you can:
+   - Use a paid Render plan with Shell access and run: `npm run seed`
+   - Or connect to your database directly and run the seed script locally
+
+> **Important**: The `DIRECT_URL` environment variable must point to the non-pooled (direct) Supabase connection string (port 5432). Prisma migrations require a direct connection, not the pooled connection.
 
 #### Step 5: Note Your API URL
 Your API will be available at: `https://campaign-manager-api.onrender.com`
