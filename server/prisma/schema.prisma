@@ -1,0 +1,246 @@
+// Prisma schema for Campaign Management Application
+// Supports Supabase (PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// User roles enum
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  CAMPAIGN_CREATOR
+  CAMPAIGN_MANAGER
+  RESPONDENT
+  GUEST
+}
+
+// Campaign status enum
+enum CampaignStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+// Campaign visibility enum
+enum CampaignVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+// Manager permission enum
+enum ManagerPermission {
+  VIEW_RESULTS
+  EDIT_CAMPAIGN
+  MANAGE_RESPONDENTS
+}
+
+// Question type enum
+enum QuestionType {
+  TEXT
+  PARAGRAPH
+  MULTIPLE_CHOICE
+  CHECKBOX
+  RATING
+  FILE_UPLOAD
+  DATE
+  NUMBER
+}
+
+// Users table
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          UserRole  @default(RESPONDENT)
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  createdCampaigns   Campaign[]         @relation("CampaignCreator")
+  managedCampaigns   CampaignManager[]
+  invitedManagers    CampaignManager[]  @relation("InvitedBy")
+  exports            Export[]
+  auditLogs          AuditLog[]
+  organization       Organization?      @relation("OrganizationOwner")
+  organizationMember Organization?      @relation("OrganizationMembers", fields: [organizationId], references: [id])
+  organizationId     String?            @map("organization_id")
+
+  @@map("users")
+}
+
+// Organizations table (optional)
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  settings  Json?
+  ownerId   String   @unique @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  owner     User       @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  members   User[]     @relation("OrganizationMembers")
+  campaigns Campaign[]
+
+  @@map("organizations")
+}
+
+// Campaigns table
+model Campaign {
+  id                              String             @id @default(uuid())
+  title                           String
+  description                     String?
+  creatorId                       String             @map("creator_id")
+  organizationId                  String?            @map("organization_id")
+  status                          CampaignStatus     @default(DRAFT)
+  visibility                      CampaignVisibility @default(PRIVATE)
+  allowManagerViewRespondentDetails Boolean          @default(false) @map("allow_manager_view_respondent_details")
+  shareableLink                   String?            @unique @map("shareable_link")
+  scheduledPublishAt              DateTime?          @map("scheduled_publish_at")
+  closedAt                        DateTime?          @map("closed_at")
+  createdAt                       DateTime           @default(now()) @map("created_at")
+  updatedAt                       DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  creator      User              @relation("CampaignCreator", fields: [creatorId], references: [id])
+  organization Organization?     @relation(fields: [organizationId], references: [id])
+  managers     CampaignManager[]
+  forms        SurveyForm[]
+  questions    Question[]
+  respondents  Respondent[]
+  exports      Export[]
+  auditLogs    AuditLog[]
+
+  @@map("campaigns")
+}
+
+// Campaign Managers table
+model CampaignManager {
+  id          String               @id @default(uuid())
+  campaignId  String               @map("campaign_id")
+  userId      String               @map("user_id")
+  permissions ManagerPermission[]
+  invitedById String               @map("invited_by")
+  acceptedAt  DateTime?            @map("accepted_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  // Relations
+  campaign  Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+  invitedBy User     @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@unique([campaignId, userId])
+  @@map("campaign_managers")
+}
+
+// Survey Forms table (versioned form structure)
+model SurveyForm {
+  id         String   @id @default(uuid())
+  campaignId String   @map("campaign_id")
+  structure  Json
+  version    Int      @default(1)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@map("survey_forms")
+}
+
+// Questions table
+model Question {
+  id           String       @id @default(uuid())
+  campaignId   String       @map("campaign_id")
+  questionText String       @map("question_text")
+  type         QuestionType
+  options      Json?        @map("opts")
+  required     Boolean      @default(false)
+  order        Int          @default(0)
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  campaign  Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  responses Response[]
+
+  @@map("questions")
+}
+
+// Respondents table
+model Respondent {
+  id                 String    @id @default(uuid())
+  campaignId         String    @map("campaign_id")
+  respondentToken    String    @unique @map("respondent_token")
+  submittedAt        DateTime? @map("submitted_at")
+  metadata           Json?
+  identifiableFields Json?     @map("identifiable_fields")
+  anonymous          Boolean   @default(true)
+  consentGiven       Boolean   @default(false) @map("consent_given")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  campaign  Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  responses Response[]
+
+  @@map("respondents")
+}
+
+// Responses table
+model Response {
+  id           String   @id @default(uuid())
+  respondentId String   @map("respondent_id")
+  questionId   String   @map("question_id")
+  answer       Json
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  // Relations
+  respondent Respondent @relation(fields: [respondentId], references: [id], onDelete: Cascade)
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("responses")
+}
+
+// Exports table
+model Export {
+  id          String   @id @default(uuid())
+  campaignId  String   @map("campaign_id")
+  filePath    String   @map("file_path")
+  generatedBy String   @map("generated_by")
+  format      String   @default("csv")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [generatedBy], references: [id])
+
+  @@map("exports")
+}
+
+// Audit Logs table
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  details    Json?
+  campaignId String?  @map("campaign_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@map("audit_logs")
+}
