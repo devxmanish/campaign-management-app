@@ -34,8 +34,8 @@ Thumbs.db
 # Testing
 coverage/
 
-# Prisma
-server/prisma/migrations/
+# Prisma (keep migrations for deployment)
+# Migrations are required for database schema deployment
 
 # Temporary files
 *.tmp

@@ -17,4 +17,7 @@ npx prisma migrate deploy
 echo "🏗️ Building TypeScript..."
 npm run build
 
+echo "🌱 Running database seed (creates Super Admin if not exists)..."
+npm run seed:prod || echo "⚠️ Seed failed or Super Admin already exists - continuing..."
+
 echo "✅ Build complete!"
