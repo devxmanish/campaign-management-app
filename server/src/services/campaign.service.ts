@@ -19,9 +19,9 @@ export class CampaignService {
       data: {
         title: input.title,
         description: input.description,
-        visibility: input.visibility,
+        ...(input.visibility && { visibility: input.visibility }),
         creatorId,
-        organizationId: input.organizationId,
+        ...(input.organizationId && { organizationId: input.organizationId }),
       },
       include: {
         creator: {
