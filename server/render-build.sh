@@ -18,6 +18,8 @@ echo "🏗️ Building TypeScript..."
 npm run build
 
 echo "🌱 Running database seed (creates Super Admin if not exists)..."
-npm run seed:prod || echo "⚠️ Seed failed or Super Admin already exists - continuing..."
+# The seed script handles the case where users already exist gracefully
+# It only fails on actual errors (e.g., database connection issues)
+npm run seed:prod
 
 echo "✅ Build complete!"
