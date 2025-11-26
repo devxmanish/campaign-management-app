@@ -19,6 +19,8 @@ enum UserRole {
   CAMPAIGN_MANAGER
   RESPONDENT
   GUEST
+
+  @@map("user_role")
 }
 
 // Campaign status enum
@@ -27,12 +29,16 @@ enum CampaignStatus {
   PUBLISHED
   CLOSED
   ARCHIVED
+
+  @@map("campaign_status")
 }
 
 // Campaign visibility enum
 enum CampaignVisibility {
   PUBLIC
   PRIVATE
+
+  @@map("campaign_visibility")
 }
 
 // Manager permission enum
@@ -40,6 +46,8 @@ enum ManagerPermission {
   VIEW_RESULTS
   EDIT_CAMPAIGN
   MANAGE_RESPONDENTS
+
+  @@map("manager_permission")
 }
 
 // Question type enum
@@ -52,28 +60,30 @@ enum QuestionType {
   FILE_UPLOAD
   DATE
   NUMBER
+
+  @@map("question_type")
 }
 
 // Users table
 model User {
-  id            String    @id @default(uuid())
-  name          String
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  role          UserRole  @default(RESPONDENT)
-  active        Boolean   @default(true)
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(RESPONDENT)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  createdCampaigns   Campaign[]         @relation("CampaignCreator")
+  createdCampaigns   Campaign[]        @relation("CampaignCreator")
   managedCampaigns   CampaignManager[]
-  invitedManagers    CampaignManager[]  @relation("InvitedBy")
+  invitedManagers    CampaignManager[] @relation("InvitedBy")
   exports            Export[]
   auditLogs          AuditLog[]
-  organization       Organization?      @relation("OrganizationOwner")
-  organizationMember Organization?      @relation("OrganizationMembers", fields: [organizationId], references: [id])
-  organizationId     String?            @map("organization_id")
+  organization       Organization?     @relation("OrganizationOwner")
+  organizationMember Organization?     @relation("OrganizationMembers", fields: [organizationId], references: [id])
+  organizationId     String?           @map("organization_id")
 
   @@map("users")
 }
@@ -97,19 +107,19 @@ model Organization {
 
 // Campaigns table
 model Campaign {
-  id                              String             @id @default(uuid())
-  title                           String
-  description                     String?
-  creatorId                       String             @map("creator_id")
-  organizationId                  String?            @map("organization_id")
-  status                          CampaignStatus     @default(DRAFT)
-  visibility                      CampaignVisibility @default(PRIVATE)
-  allowManagerViewRespondentDetails Boolean          @default(false) @map("allow_manager_view_respondent_details")
-  shareableLink                   String?            @unique @map("shareable_link")
-  scheduledPublishAt              DateTime?          @map("scheduled_publish_at")
-  closedAt                        DateTime?          @map("closed_at")
-  createdAt                       DateTime           @default(now()) @map("created_at")
-  updatedAt                       DateTime           @updatedAt @map("updated_at")
+  id                                String             @id @default(uuid())
+  title                             String
+  description                       String?
+  creatorId                         String             @map("creator_id")
+  organizationId                    String?            @map("organization_id")
+  status                            CampaignStatus     @default(DRAFT)
+  visibility                        CampaignVisibility @default(PRIVATE)
+  allowManagerViewRespondentDetails Boolean            @default(false) @map("allow_manager_view_respondent_details")
+  shareableLink                     String?            @unique @map("shareable_link")
+  scheduledPublishAt                DateTime?          @map("scheduled_publish_at")
+  closedAt                          DateTime?          @map("closed_at")
+  createdAt                         DateTime           @default(now()) @map("created_at")
+  updatedAt                         DateTime           @updatedAt @map("updated_at")
 
   // Relations
   creator      User              @relation("CampaignCreator", fields: [creatorId], references: [id])
@@ -126,14 +136,14 @@ model Campaign {
 
 // Campaign Managers table
 model CampaignManager {
-  id          String               @id @default(uuid())
-  campaignId  String               @map("campaign_id")
-  userId      String               @map("user_id")
+  id          String              @id @default(uuid())
+  campaignId  String              @map("campaign_id")
+  userId      String              @map("user_id")
   permissions ManagerPermission[]
-  invitedById String               @map("invited_by")
-  acceptedAt  DateTime?            @map("accepted_at")
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
+  invitedById String              @map("invited_by")
+  acceptedAt  DateTime?           @map("accepted_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
 
   // Relations
   campaign  Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
