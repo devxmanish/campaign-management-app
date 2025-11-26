@@ -10,7 +10,8 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "lint": "eslint src --ext .ts",
-    "seed": "ts-node src/utils/seed.ts"
+    "seed": "ts-node src/utils/seed.ts",
+    "seed:prod": "node dist/utils/seed.js"
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",

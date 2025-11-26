@@ -7,11 +7,39 @@ import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 
 const app: Express = express();
 
-// CORS configuration
-app.use(cors({
-  origin: config.frontendUrl,
+// CORS configuration - support multiple origins for different environments
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Parse allowed origins from environment (comma-separated)
+    const allowedOrigins = config.frontendUrl
+      .split(',')
+      .map(url => url.trim())
+      .filter(url => url.length > 0);
+    
+    // In development, allow localhost origins
+    if (config.nodeEnv === 'development') {
+      if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+        return callback(null, true);
+      }
+    }
+    
+    // Check if the origin is in our allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Reject origins not in the allowed list
+    callback(new Error('CORS not allowed'), false);
+  },
   credentials: true,
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing
 app.use(express.json());
